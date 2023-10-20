@@ -13,6 +13,7 @@ import markdown
 import pprint
 import re
 from furl import furl
+import json
 
 COMMENT_PACKAGE_INDEX = 2
 COMMENT_MESSAGE_INDEX = 4
@@ -134,7 +135,32 @@ def parse_field(field: FieldDescriptorProto, containing_message: DescriptorProto
 
     mf.number = field.number
     mf.label = to_label_name(field.label, field.proto3_optional)
-    mf.description = ctx.GetComments()
+    comments = ctx.GetComments()
+    comments_simple = ' '.join(comments.split())
+    try:
+        comments_dict = json.loads(comments_simple)
+    except json.decoder.JSONDecodeError:
+        #if comments_simple and comments_simple[0] == '{':
+        #    print(comments_simple)
+        pass
+    else:
+        comments = comments_dict["desc"]
+        # don't iterate here so that these added strings are produced in this order
+        if "keyword" in comments_dict:
+            v = comments_dict["keyword"]
+            comments += "\n\nThis field's values should " + ("be" if v else "NOT be") + " indexed in a database."
+        if "searchable" in comments_dict:
+            v = comments_dict["searchable"]
+            comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " searchable in a database."
+        if "thresholdSearch" in comments_dict:
+            v = comments_dict["thresholdSearch"]
+            comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " suitable for a threshold criteria"
+            if "realRange" in comments_dict:
+                v = comments_dict["realRange"]
+                comments += " over an allowed range of " + str(v)
+            comments += "."
+
+    mf.description = comments
     mf.description_html = markdown_to_html(mf.description, ctx.config)
     mf.line_number = ctx.GetLineNumber()
     mf.full_type = field.type_name.strip(".") if field.type_name != "" else to_type_name(field.type)
