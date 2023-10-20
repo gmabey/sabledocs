@@ -149,12 +149,29 @@ def parse_field(field: FieldDescriptorProto, containing_message: DescriptorProto
         if "keyword" in comments_dict:
             v = comments_dict["keyword"]
             comments += "\n\nThis field's values should " + ("be" if v else "NOT be") + " indexed in a database."
+
         if "searchable" in comments_dict:
             v = comments_dict["searchable"]
             comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " searchable in a database."
+
+        watching_for_realRange = False
+
         if "thresholdSearch" in comments_dict:
             v = comments_dict["thresholdSearch"]
             comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " suitable for a threshold criteria"
+            watching_for_realRange = True
+
+        if "wrappingIntervalSearch" in comments_dict:
+            v = comments_dict["wrappingIntervalSearch"]
+            comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " suitable for a wrapping interval criteria"
+            watching_for_realRange = True
+
+        if "intervalSearch" in comments_dict:
+            v = comments_dict["intervalSearch"]
+            comments += "\n\nThis field's values " + ("are" if v else "are NOT") + " suitable for an interval criteria"
+            watching_for_realRange = True
+
+        if watching_for_realRange:
             if "realRange" in comments_dict:
                 v = comments_dict["realRange"]
                 comments += " over an allowed range of " + str(v)
